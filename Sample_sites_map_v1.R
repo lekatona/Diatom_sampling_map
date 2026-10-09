@@ -31,6 +31,11 @@ Macro_stress <- Macro_stress|>
 
 Macro_dat <- rbind(Macro_ref, Macro_stress)
 
+### use macroinvertebrate data frame to create periphyton data frame
+### column "PERI" if not NA, mark as X
+
+
+
 ### read in shapefiles
 ecotype_sf <- st_read(here(path = file_path, "co_eco_l4", "co_eco_l4.shp"))
 #st_crs(ecotype_sf)
@@ -38,6 +43,12 @@ watersheds_sf <- st_read(here(path = file_path, "All_River_Basins", "All_River_B
 #st_crs(watersheds_sf)
 ### transform watershed sf CRS
 watersheds_sf_trans <- st_transform(watersheds_sf, crs = st_crs(ecotype_sf))
+
+### create Colorado boundary by compressing ecoregion boundaries
+co_boundary_sf <- st_union(ecotype_sf)|>
+                  st_transform(crs = 26913)
+
+
 
 ### Convert site data frames to sf objects
 Macro_dat_sf <- st_as_sf(
@@ -62,6 +73,12 @@ Macro_dat_sf <- st_as_sf(
 source("cdphe_ggplot_theme-v4.R")
 
 map1 <- ggplot()+
+  ### Colorado bold outline
+  geom_sf(
+    data = co_boundary_sf,
+    fill = NA,
+    color = "black",
+    linewidth = 1.2)+
   ### Basin watersheds outlines
   geom_sf(
     data = watersheds_sf,
@@ -78,8 +95,8 @@ map1 <- ggplot()+
   ### sample points
   geom_sf(
     data = Macro_dat_sf,
-    aes(color = Site_type), 
-    size = 3.5, 
+    aes(shape = Site_type, size = MMI), 
+    #size = 3.5, 
     alpha = 0.65)+
   ### scale bar and north arrow
   annotation_scale(
@@ -90,6 +107,16 @@ map1 <- ggplot()+
     which_north = "true",
     style = north_arrow_minimal(text_size = 8))+
   ### labels and styling
+  scale_fill_cdphe(palette = "categorical", name = "Level III Ecoregion")+
+  scale_color_cdphe(palette = "navy", name = "Site Type")+
+  ### continuous scale for MMI point size
+  scale_size_area(
+    name = "MMI score", 
+    max_size = 6, 
+    breaks = c(10, 25, 50, 80) ### MMI min = 4, max = 94
+  )+
+  ### ensure CRS
+  coord_sf(crs = 26913, datum = NA)+
 theme_cdphe(type = "web", 
             legend_position = "top") + 
   theme(axis.line = element_blank(), # Remove standard chart axis lines 
