@@ -1,6 +1,9 @@
 ### Map of diatom and macroinvertebrate sampling locations
 ###   Use to scope additional sampling sites
 
+### Note: This map only plots stressed or reference sites; many other sites
+###   have been sampled that are between those categories! Those could/should
+###   be brought in to this map or another map that shows all sample points
 
 ### Note: Watersheds shapefile includes subbasins (so, 11 basins total)
 
@@ -33,7 +36,9 @@ Macro_dat <- rbind(Macro_ref, Macro_stress)
 
 ### use macroinvertebrate data frame to create periphyton data frame
 ### column "PERI" if not NA, mark as X
-
+Macro_dat <- Macro_dat|>
+              mutate(Diatom_dat = if_else(
+                !is.na(PERI) & str_trim(PERI) != "", "X", NA_character_))
 
 
 ### read in shapefiles
@@ -72,6 +77,13 @@ Macro_dat_sf <- st_as_sf(
 ### incorporate CDPHE style
 source("cdphe_ggplot_theme-v4.R")
 
+### Set up typeface plotting export options
+library(showtext)
+showtext_auto()
+showtext_opts(dpi = 600)
+font_add(family = "Trebuchet MS", regular = "trebuc.ttf", bold = "trebucbd.ttf")
+
+
 map1 <- ggplot()+
   ### Colorado bold outline
   geom_sf(
@@ -92,12 +104,21 @@ map1 <- ggplot()+
     aes(fill = L3_KEY),
     color = "white",
     alpha = 0.2)+
-  ### sample points
+  ### macroinvertebrate sample points
   geom_sf(
     data = Macro_dat_sf,
-    aes(shape = Site_type, size = MMI), 
+    aes(shape = Site_type, size = MMI, color = as.factor(BIOREGION)), 
     #size = 3.5, 
-    alpha = 0.65)+
+    alpha = 0.8)+
+  ### periphyton data points
+  geom_sf(
+    data = Macro_dat_sf|>filter(Diatom_dat == "X"),
+      shape = 23,
+      fill = CDPHE_PALETTES$yellow[1],
+      size = 2.5,
+      color = "black",
+      alpha = 0.65, 
+      stroke = 0.4)+
   ### scale bar and north arrow
   annotation_scale(
     location = "bl",  ### bottom left
@@ -105,26 +126,65 @@ map1 <- ggplot()+
   annotation_north_arrow(
     location = "tr",
     which_north = "true",
-    style = north_arrow_minimal(text_size = 8))+
+    style = north_arrow_fancy_orienteering(text_size = 12))+
   ### labels and styling
   scale_fill_cdphe(palette = "categorical", name = "Level III Ecoregion")+
-  scale_color_cdphe(palette = "navy", name = "Site Type")+
+  #scale_color_cdphe(palette = "navy", name = "Site Type")+
+  ### colors for macroinvertebrate/bioregion points 
+  scale_color_manual(
+    name = "Bioregion",
+    values = c(
+      CDPHE_PALETTES$forest[1],
+      CDPHE_PALETTES$olive[1],
+      CDPHE_PALETTES$purple[1]))+
   ### continuous scale for MMI point size
   scale_size_area(
     name = "MMI score", 
     max_size = 6, 
     breaks = c(10, 25, 50, 80) ### MMI min = 4, max = 94
   )+
+  ### shape format
+  scale_shape_manual(
+    name = "",
+    values = c(16, 17))+
   ### ensure CRS
-  coord_sf(crs = 26913, datum = NA)+
+  coord_sf(crs = 26913)+
 theme_cdphe(type = "web", 
             legend_position = "top") + 
   theme(axis.line = element_blank(), # Remove standard chart axis lines 
         axis.title = element_blank(), # Hide Lat/Long axis title text 
-        panel.grid.major = element_line(color = "#E5E5E5", linewidth = 0.2)) # Subtle gridlines 
-
+        panel.grid.major = element_line(color = "grey45", linewidth = 0.2),
+        ### adjust legend sizes
+        legend.key.size = unit(0.35, "cm"),
+        legend.key.height = unit(0.35, "cm"),
+        legend.key.width = unit(0.35, "cm"),
+        legend.title = element_text(size = 14, face = "bold"),
+        legend.text = element_text(size = 12),
+        legend.spacing.y = unit(0.15, "cm"),
+        legend.box.margin = margin(t = 2, r = 2, b = 2, l = 2, unit = "pt"))+
+  ### try to get legend to fit better
+  guides(
+    #color = guide_legend(
+    #  ncol = 1, 
+    #  byrow = T, 
+    #  title.position = "top"
+    #),
+    fill = guide_legend(
+      nrow = 3),
+    shape = guide_legend(
+      nrow = 3),
+    color = guide_legend(
+      nrow = 3),
+    size = guide_legend(
+      nrow = 4))
+    
+    
 map1
-  
+
+#ggsave("20261009_RefStress_Biohab_map.jpeg", 
+#       plot = map1, 
+#       dpi = 600, width = 16, height = 10, units = "in",
+#       device = ragg::agg_jpeg)  
   
   
   
