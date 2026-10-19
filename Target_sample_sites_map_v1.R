@@ -220,4 +220,4 @@ target_sites1
 #ggsave("20261019_Biohab_potential_sites_map.jpeg", 
 #       plot = target_sites1, 
 #       dpi = 600, width = 16, height = 10, units = "in",
-#       device = ragg::agg_jpeg)  
+#       device = ragg::agg_jpeg)   
