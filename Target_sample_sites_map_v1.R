@@ -71,7 +71,6 @@ Macro_dat|>
 ###   (may have gotten some of these in 2026!) that have macroinvertebrate data
 ###   but no periphyton data
 
-
 ################################################################################
 ### generate map with potential target sites
 
@@ -87,8 +86,6 @@ watersheds_sf_trans <- st_transform(watersheds_sf, crs = st_crs(ecotype_sf))
 ### create Colorado boundary by compressing ecoregion boundaries
 co_boundary_sf <- st_union(ecotype_sf)|>
   st_transform(crs = 26913)
-
-
 
 ### Convert site data frames to sf objects
 Macro_dat_sf <- st_as_sf(
@@ -221,3 +218,17 @@ target_sites1
 #       plot = target_sites1, 
 #       dpi = 600, width = 16, height = 10, units = "in",
 #       device = ragg::agg_jpeg)   
+
+
+################################################################################
+### generate potential target site list based on map
+
+### potential targets = reference and stressed xeric sites < 107.5W (Delta, Naturita areas);
+###     stressed plains sites near Fort Collins/Greeley area (<105.5W)
+
+target_sites_df <- Macros_no_peri|>
+                  filter(
+                    Long_Dec < 107.5 & Lat_Dec < 39.5 & BIOREGION == "Xeric" |
+                      Long_Dec < 105.5 & Lat_Dec > 39.5 & BIOREGION == "Plains"
+                  )
+
